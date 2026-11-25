@@ -32,6 +32,12 @@ Codex:
 codex mcp add sharp-search -- docker run -i --rm ghcr.io/belluxx/sharp-search-mcp
 ```
 
+Pi:
+
+```sh
+pi mcp add sharp-search --exposure direct -- docker run -i --rm ghcr.io/belluxx/sharp-search-mcp
+```
+
 ## Security stuff
 
 - fetch only connects to public IPs, including after redirects, so it can't reach localhost or your
