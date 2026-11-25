@@ -1,4 +1,4 @@
-FROM --platform=$BUILDPLATFORM denoland/deno:2.4.2 AS challenge
+FROM --platform=$BUILDPLATFORM denoland/deno:2.9.8 AS challenge
 ARG TARGETARCH
 WORKDIR /build
 COPY challenge/package.json challenge/deno.lock challenge/challenge.mjs ./
@@ -10,7 +10,7 @@ RUN case "$TARGETARCH" in \
  && deno install --frozen \
  && deno compile --frozen --no-prompt --target "$target" --allow-env=WS_NO_BUFFER_UTIL,WS_NO_UTF_8_VALIDATE --output challenge challenge.mjs
 
-FROM searxng/searxng:2026.11.14-a7128d5d1
+FROM searxng/searxng:2026.11.23-a7163d091
 LABEL io.modelcontextprotocol.server.name="io.github.Belluxx/sharp-search"
 COPY --chown=searxng:searxng searxng/settings.yml /etc/searxng/settings.yml
 COPY src/server.py src/fetch.py /app/

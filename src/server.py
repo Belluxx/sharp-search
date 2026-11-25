@@ -215,7 +215,7 @@ def answer(message):
     method = message.get("method")
     if method == "initialize":
         # Accept the client's version: nothing this server uses differs between versions.
-        result = {"protocolVersion": params.get("protocolVersion") or "2025-06-18", "capabilities": {"tools": {}},
+        result = {"protocolVersion": params.get("protocolVersion") or "2025-11-25", "capabilities": {"tools": {}},
                   "serverInfo": {"name": "sharp-search", "version": "1.0.0"}}
     elif method == "ping":
         result = {}
