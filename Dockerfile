@@ -11,6 +11,7 @@ RUN case "$TARGETARCH" in \
  && deno compile --frozen --no-prompt --target "$target" --allow-env=WS_NO_BUFFER_UTIL,WS_NO_UTF_8_VALIDATE --output challenge challenge.mjs
 
 FROM searxng/searxng:2026.11.14-a7128d5d1
+LABEL io.modelcontextprotocol.server.name="io.github.Belluxx/sharp-search"
 COPY --chown=searxng:searxng searxng/settings.yml /etc/searxng/settings.yml
 COPY src/server.py src/fetch.py /app/
 COPY --from=challenge /build/challenge /app/challenge

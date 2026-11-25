@@ -1,6 +1,6 @@
 <p align="center"><img src="docs/banner.svg" alt="sharp-search"></p>
 
-An MCP server for web search and page fetching, in a single Docker container. No configuration, no
+MCP server for web search and page fetching, passing bot challenges, in a single Docker container. No configuration, no
 API keys.
 
 A nice improvement for example is full access to reddit posts and comments.
