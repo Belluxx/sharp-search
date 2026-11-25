@@ -1,0 +1,22 @@
+# Only server.py queries this SearXNG, over loopback, so only JSON output is enabled.
+use_default_settings:
+  engines:
+    # Brave returns relative redirects (/go/v1/…) instead of result URLs. Removed rather than
+    # disabled, because a !bang in a query can re-enable a disabled engine.
+    remove:
+      - brave
+      - brave.images
+      - brave.videos
+      - brave.news
+general:
+  contact_url: mailto:sharp-search@github---project.com
+server:
+  limiter: false
+  image_proxy: false
+search:
+  formats:
+    - json
+engines:
+  # An extra general engine, for when the default ones reject a query.
+  - name: yahoo
+    disabled: false

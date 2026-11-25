@@ -1,0 +1,125 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1050 434" width="1050" height="434" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>How sharp-search-mcp works</title>
+  <style>
+    .box { fill: #f6f8fa; stroke: #d0d7de; stroke-width: 1; shape-rendering: crispEdges; }
+    .bar { fill: #cf222e; shape-rendering: crispEdges; }
+    .container { fill: none; stroke: #afb8c1; stroke-width: 1; stroke-dasharray: 4 4; shape-rendering: crispEdges; }
+    .line { fill: none; stroke: #8c959f; stroke-width: 1.25; }
+    .head { fill: #8c959f; }
+    .icon { fill: none; stroke: #59636e; stroke-width: 1.5; stroke-linejoin: miter; }
+    .icon.own { stroke: #cf222e; }
+    .title { fill: #1f2328; font-size: 14px; font-weight: 600; }
+    .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+    .sub, .label { fill: #59636e; font-size: 12px; }
+    .label.code { font-size: 11px; }
+    .group { fill: #59636e; font-size: 11px; font-weight: 600; letter-spacing: 1.2px; }
+    .mid { text-anchor: middle; }
+    @media (prefers-color-scheme: dark) {
+      .box { fill: #151b23; stroke: #3d444d; }
+      .bar { fill: #f85149; }
+      .container { stroke: #3d444d; }
+      .line { stroke: #656c76; }
+      .head { fill: #656c76; }
+      .icon { stroke: #9198a1; }
+      .icon.own { stroke: #f85149; }
+      .title { fill: #e6edf3; }
+      .sub, .label, .group { fill: #9198a1; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" refX="8" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse">
+      <path class="head" d="M0,0 L8,4 L0,8 z"/>
+    </marker>
+    <symbol id="i-agent" viewBox="0 0 24 24">
+      <path d="M12 3 L13.9 10.1 L21 12 L13.9 13.9 L12 21 L10.1 13.9 L3 12 L10.1 10.1 Z"/>
+    </symbol>
+    <symbol id="i-server" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="7"/>
+      <rect x="3" y="13" width="18" height="7"/>
+      <path d="M6.5 7.5 H9.5 M6.5 16.5 H9.5"/>
+    </symbol>
+    <symbol id="i-search" viewBox="0 0 24 24">
+      <circle cx="10.5" cy="10.5" r="6.5"/>
+      <path d="M15.2 15.2 L21 21"/>
+    </symbol>
+    <symbol id="i-page" viewBox="0 0 24 24">
+      <path d="M5 3 H14 L19 8 V21 H5 Z M14 3 V8 H19"/>
+      <path d="M8 12 H16 M8 15 H16 M8 18 H13"/>
+    </symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24">
+      <path d="M12 3 L19.5 6 V11.5 C19.5 16 16.5 19.5 12 21 C7.5 19.5 4.5 16 4.5 11.5 V6 Z"/>
+      <path d="M8.5 12 L11 14.5 L15.5 10"/>
+    </symbol>
+    <symbol id="i-globe" viewBox="0 0 24 24">
+      <circle cx="12" cy="12" r="9"/>
+      <ellipse cx="12" cy="12" rx="3.8" ry="9"/>
+      <path d="M3 12 H21"/>
+    </symbol>
+    <symbol id="i-browser" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="16"/>
+      <path d="M3 8.5 H21 M5.5 6.25 H6.5 M8 6.25 H9"/>
+    </symbol>
+  </defs>
+
+  <!-- Agent -->
+  <rect class="box" x="20" y="133" width="170" height="76"/>
+  <use class="icon" href="#i-agent" x="36" y="161" width="20" height="20"/>
+  <text class="title" x="68" y="166">AI agent</text>
+  <text class="sub" x="68" y="186">MCP client</text>
+
+  <!-- Container -->
+  <rect class="container" x="230" y="24" width="510" height="390"/>
+  <text class="group" x="246" y="46">DOCKER CONTAINER</text>
+
+  <rect class="box" x="260" y="133" width="160" height="76"/>
+  <rect class="bar" x="260" y="133" width="3" height="76"/>
+  <use class="icon own" href="#i-server" x="276" y="161" width="20" height="20"/>
+  <text class="title code" x="308" y="159">server.py</text>
+  <text class="sub" x="308" y="179">MCP server</text>
+  <text class="sub" x="308" y="195">stdio or HTTP</text>
+
+  <rect class="box" x="510" y="60" width="200" height="76"/>
+  <use class="icon" href="#i-search" x="526" y="88" width="20" height="20"/>
+  <text class="title" x="558" y="86">SearXNG</text>
+  <text class="sub" x="558" y="106">metasearch engine</text>
+  <text class="sub" x="558" y="122">on loopback</text>
+
+  <rect class="box" x="510" y="206" width="200" height="76"/>
+  <rect class="bar" x="510" y="206" width="3" height="76"/>
+  <use class="icon own" href="#i-page" x="526" y="234" width="20" height="20"/>
+  <text class="title code" x="558" y="232">fetch.py</text>
+  <text class="sub" x="558" y="252">public IPs only</text>
+  <text class="sub" x="558" y="268">HTML → Markdown</text>
+
+  <rect class="box" x="510" y="318" width="200" height="76"/>
+  <rect class="bar" x="510" y="318" width="3" height="76"/>
+  <use class="icon own" href="#i-shield" x="526" y="346" width="20" height="20"/>
+  <text class="title code" x="558" y="344">challenge</text>
+  <text class="sub" x="558" y="364">solves JS bot checks</text>
+  <text class="sub" x="558" y="380">in a Deno sandbox</text>
+
+  <!-- Internet -->
+  <text class="group" x="820" y="46">INTERNET</text>
+
+  <rect class="box" x="820" y="60" width="210" height="76"/>
+  <use class="icon" href="#i-globe" x="836" y="88" width="20" height="20"/>
+  <text class="title" x="868" y="86">Search engines</text>
+  <text class="sub" x="868" y="106">Google, DuckDuckGo,</text>
+  <text class="sub" x="868" y="122">Yahoo, Wikipedia, …</text>
+
+  <rect class="box" x="820" y="206" width="210" height="76"/>
+  <use class="icon" href="#i-browser" x="836" y="234" width="20" height="20"/>
+  <text class="title" x="868" y="239">Websites</text>
+  <text class="sub" x="868" y="259">requested as Chrome</text>
+
+  <!-- Arrows -->
+  <path class="line" d="M191,171 H259" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <path class="line" d="M421,171 H450 V98 H509" marker-end="url(#arrow)"/>
+  <path class="line" d="M421,171 H450 V244 H509" marker-end="url(#arrow)"/>
+  <text class="label code mid" x="480" y="91">search</text>
+  <text class="label code mid" x="480" y="237">fetch</text>
+  <path class="line" d="M711,98 H819" marker-end="url(#arrow)"/>
+  <path class="line" d="M711,244 H819" marker-end="url(#arrow)"/>
+  <path class="line" d="M610,283 V317" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+  <text class="label" x="620" y="304">bot check</text>
+</svg>
