@@ -23,7 +23,7 @@ For Cursor and VS Code, in one click:
 Claude Code:
 
 ```sh
-claude mcp add sharp-search -- docker run -i --rm ghcr.io/belluxx/sharp-search-mcp
+claude mcp add -s user sharp-search -- docker run -i --rm ghcr.io/belluxx/sharp-search-mcp
 ```
 
 Codex:
