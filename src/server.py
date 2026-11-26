@@ -200,7 +200,7 @@ def answer(message):
     if method == "initialize":
         # Nothing this server uses differs between protocol versions.
         result = {"protocolVersion": params.get("protocolVersion") or "2025-11-25", "capabilities": {"tools": {}},
-                  "serverInfo": {"name": "sharp-search", "version": "1.0.0"}}
+                  "serverInfo": {"name": "sharp-search", "version": "1.1.0"}}
     elif method == "ping":
         result = {}
     elif method == "tools/list":
