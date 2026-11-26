@@ -39,13 +39,13 @@ CHALLENGE_KB = 768 << 10
 NAT64 = ipaddress.ip_network("64:ff9b::/96")
 
 DROPPED = {
-    "script", "style", "noscript", "svg", "canvas", "iframe", "object", "head", "nav", "footer", "aside", "form", "button", "select",
+    "script", "style", "noscript", "svg", "canvas", "iframe", "object", "head", "nav", "footer", "aside", "button", "select", "textarea",
 }
 DROPPED_ROLES = {"navigation", "banner", "contentinfo", "complementary", "search", "dialog"}
 HEADINGS = {"h1", "h2", "h3", "h4", "h5", "h6"}
 BLOCKS = {
-    "address", "article", "blockquote", "details", "div", "dl", "dd", "dt", "fieldset", "figcaption", "figure", "header", "hr", "main",
-    "ol", "p", "section", "summary", "table", "ul",
+    "address", "article", "blockquote", "details", "div", "dl", "dd", "dt", "fieldset", "figcaption", "figure", "form", "header", "hr",
+    "main", "ol", "p", "section", "summary", "table", "ul",
 }
 
 # React's streaming SSR moves late content into place with $RC(boundary, content) and

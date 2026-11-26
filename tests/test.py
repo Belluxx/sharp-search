@@ -149,6 +149,11 @@ class Markdown(unittest.TestCase):
         body = b"<html><title>T</title><nav>Menu</nav><h2>Steps</h2><ul><li>One</li><li>Two</li></ul><table><tr><td>a</td><td>b</td></tr></table><pre>x  = 1\n  y</pre><footer>Legal</footer></html>"
         self.assertEqual(fetch.page_text(body, "https://site.test/", "utf-8"), ("T", "## Steps\n\n- One\n- Two\n\n| a | b\n\n```\nx  = 1\n  y\n```"))
 
+    def test_form_content_is_kept(self):
+        # Some sites wrap the whole page in a form.
+        body = b'<html><body>Shop<form><h1>Board</h1><label>Price <b>10</b></label><input value="1"><select><option>IT</option></select><textarea>Note</textarea><button>Buy</button></form></body></html>'
+        self.assertEqual(fetch.page_text(body, "https://site.test/", "utf-8")[1], "Shop\n\n# Board\n\nPrice 10")
+
 
 BOT_CHECK = (b'<form method="GET" action="/checked"><input type="hidden" name="solution"></form><script>document.cookie = "passed=1";'
          b'document.addEventListener("DOMContentLoaded", async () => { const form = document.forms[0];'
