@@ -14,6 +14,6 @@ test: build
 check: build
 	./tests/check.sh $(IMAGE)
 
-# Fetches 50 pages behind bot detection on the live web, and prints the failures and a score.
+# Fetches pages behind bot detection on the live web, and prints the failures and a score.
 bots: build
 	docker run --rm -v "$(CURDIR)/tests/bots.py:/app/bots.py:ro" -w /app --entrypoint $(PYTHON) $(IMAGE) bots.py

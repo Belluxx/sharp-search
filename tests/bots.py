@@ -1,6 +1,6 @@
 """Online test of fetch against bot detection, run inside the image (make bots).
 
-Fetches 50 pages from sites that use known bot-detection systems, then prints the ones that failed
+Fetches pages from sites that use known bot-detection systems, then prints the ones that failed
 and a score. A page passes if its text has a phrase from the page's own content, which a block page
 doesn't have. Sites also judge the IP address, so the score differs between networks and runs.
 """
@@ -26,6 +26,12 @@ SITES = {
         ("https://medium.com/tag/programming", "Programming"),
         ("https://genius.com/Queen-bohemian-rhapsody-lyrics", "Galileo"),
         ("https://www.coinbase.com/price/bitcoin", "About Bitcoin"),
+        ("https://www.trovaprezzi.it/prezzo_ferramenta_scheda_caldaia_baxi.aspx", "Baxi"),
+        ("https://www.idealista.it/", "appartamenti"),
+        ("https://www.researchgate.net/topic/Machine-Learning", "Machine Learning"),
+        ("https://www.quora.com/What-is-Python", "programming language"),
+        ("https://www.mediaworld.it/", "Elettrodomestici"),
+        ("https://www.manomano.it/", "fai da te"),
     ],
     "Akamai": [
         ("https://www.nike.com/w/mens-shoes-nik1zy7ok", "Sneakers"),
@@ -35,6 +41,7 @@ SITES = {
         ("https://www.delta.com/us/en/flight-deals/overview", "Flight Deals"),
         ("https://www.washingtonpost.com/technology/", "Technology"),
         ("https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=0000320193&type=10-K", "Apple Inc"),
+        ("https://www.idealo.it/", "Confronta"),
     ],
     "DataDome": [
         ("https://www.leboncoin.fr/recherche?text=velo", "Annonces"),
@@ -45,6 +52,9 @@ SITES = {
         ("https://www.yelp.com/search?find_desc=pizza&find_loc=New+York%2C+NY", "Pizza"),
         ("https://www.reuters.com/technology/", "Technology"),
         ("https://www.g2.com/products/slack/reviews", "Slack"),
+        ("https://www.subito.it/annunci-italia/vendita/usato/?q=caldaia", "annunci"),
+        ("https://www.leroymerlin.it/", "Giardino"),
+        ("https://www.immobiliare.it/vendita-case/roma/", "Roma"),
     ],
     "PerimeterX": [
         ("https://www.zillow.com/seattle-wa/", "Homes For Sale"),
@@ -80,6 +90,7 @@ SITES = {
         ("https://www.reddit.com/r/programming/", "/r/programming/comments/"),
         ("https://www.linkedin.com/company/microsoft", "followers"),
         ("https://www.amazon.com/s?k=mechanical+keyboard", "results for"),
+        ("https://www.amazon.it/s?k=scheda+caldaia+baxi", "Baxi"),
         ("https://www.google.com/search?q=wikipedia", "wikipedia.org"),
         ("https://www.bing.com/search?q=wikipedia", "wikipedia.org"),
         ("https://duckduckgo.com/html/?q=wikipedia", "wikipedia.org"),
