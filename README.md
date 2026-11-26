@@ -38,6 +38,15 @@ Pi:
 pi mcp add sharp-search --exposure direct -- docker run -i --rm ghcr.io/belluxx/sharp-search-mcp
 ```
 
+## Blocked pages
+
+A fetch sends requests as Safari. If a site blocks it, it is fetched again as the link previews
+of Slack and iMessage. To skip those retries, add `--no-fallbacks`:
+
+```sh
+docker run -i --rm ghcr.io/belluxx/sharp-search-mcp --no-fallbacks
+```
+
 ## Security stuff
 
 - fetch only connects to public IPs, including after redirects, so it can't reach localhost or your

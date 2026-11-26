@@ -1,7 +1,8 @@
 """MCP server with two tools: search, backed by SearXNG on loopback, and fetch, backed by fetch.py.
 
 Serves MCP over stdio (newline-delimited JSON-RPC), or with --http over Streamable HTTP at :8080/mcp.
-Usage: server.py [--http]
+With --no-fallbacks, a blocked page isn't fetched again with other user agents: see Fallbacks in fetch.py.
+Usage: server.py [--http] [--no-fallbacks]
 """
 
 import json
@@ -28,12 +29,9 @@ HTTP_PORT = 8080
 DEFAULT_LIMIT = 8
 MAX_LIMIT = 20
 MAX_SNIPPET = 500
-# Chunk size for fetch.
 PAGE_CHARACTERS = 40000
-# Cache of recent pages. A fetch at offset 0 always loads the page; later chunks come from here.
 KEPT_PAGES = 16
-# Max concurrent tool calls. SearXNG idles at about 140 MB; a fetch uses about 20 MB, or 75 MB when
-# it solves a bot check.
+# Concurrent tool calls. SearXNG idles at about 140 MB, and a fetch uses up to 75 MB.
 WORK = threading.BoundedSemaphore(4)
 MAX_BODY = 1 << 20
 
@@ -78,30 +76,24 @@ engine_lock = threading.Lock()
 
 
 def start_engine():
-    """Start SearXNG if it isn't running. Called at startup and before each search."""
     global engine
     with engine_lock:
         if engine is None or engine.poll() is not None:
-            # SearXNG requires a secret key. It's never used outside the container.
             env = {**os.environ, "GRANIAN_HOST": "127.0.0.1", "GRANIAN_PORT": str(SEARXNG_PORT), "SEARXNG_SECRET": secrets.token_hex(32)}
             engine = subprocess.Popen([f"{SEARXNG}/.venv/bin/granian", "searx.webapp:app"], cwd=SEARXNG, env=env, stdin=subprocess.DEVNULL)
 
 
 class NoRedirects(urllib.request.HTTPRedirectHandler):
-    """Fails on a redirect, with an HTTPError, instead of following it."""
-
     def redirect_request(self, *args, **kwargs):
         return None
 
 
-# SearXNG answers a query that has "!!" with a redirect to another website: to the first result,
-# or for "!!name" to that site's own search. Following it would load a page from here, outside
-# the checks in fetch.py.
+# SearXNG answers a "!!" query with a redirect to another website. Following it would load that
+# page from here, outside the checks in fetch.py.
 searxng_opener = urllib.request.build_opener(NoRedirects)
 
 
 def searxng(query):
-    """Query SearXNG and return the raw JSON response."""
     start_engine()
     address = f"http://127.0.0.1:{SEARXNG_PORT}/search?" + urllib.parse.urlencode({"q": query, "format": "json"})
     # SearXNG takes a few seconds to start listening.
@@ -124,14 +116,11 @@ def searxng(query):
 
 
 def clean(text):
-    """Collapse whitespace into one line and truncate to MAX_SNIPPET characters."""
     line = " ".join(text.split()) if isinstance(text, str) else ""
     return line[:MAX_SNIPPET] + "…" if len(line) > MAX_SNIPPET else line
 
 
 def search_text(body, limit):
-    """Format a SearXNG response: instant answers and infoboxes, then up to `limit` numbered
-    results. With no results, lists the engines that failed."""
     try:
         answer = json.loads(body)
     except ValueError:
@@ -152,7 +141,6 @@ def search_text(body, limit):
         blocks.append("\n".join([f"{rank}. {title or item['url']}", f"   {item['url']}"] + ([f"   {snippet}"] if snippet else [])))
     if blocks:
         return "\n\n".join(blocks)
-    # [engine, reason] pairs, e.g. ["duckduckgo", "CAPTCHA"].
     silent = [": ".join(map(str, pair)) for pair in answer.get("unresponsive_engines") or [] if isinstance(pair, list) and pair]
     return f"No results found. Engines that failed: {'; '.join(silent)}" if silent else "No results found"
 
@@ -164,8 +152,6 @@ pages_lock = threading.Lock()
 
 
 def page_part(address, offset):
-    """Return the chunk of the page starting at `offset`. The first chunk is headed by the title and
-    URL; a chunk that isn't the last ends with the next offset."""
     with pages_lock:
         page = pages.get(address) if offset > 0 else None
     if page is None:
@@ -194,7 +180,6 @@ def number(value, default):
 
 
 def call_tool(name, arguments):
-    """Run a tool and return its text. Exceptions are returned to the agent as tool errors."""
     if name == "search":
         query = arguments.get("query").strip() if isinstance(arguments.get("query"), str) else ""
         if not query:
@@ -207,14 +192,13 @@ def call_tool(name, arguments):
 
 
 def answer(message):
-    """Handle a JSON-RPC message. Returns the response, or None for a notification."""
     id = message.get("id")
     if id is None:
         return None
     params = message.get("params") if isinstance(message.get("params"), dict) else {}
     method = message.get("method")
     if method == "initialize":
-        # Accept the client's version: nothing this server uses differs between versions.
+        # Nothing this server uses differs between protocol versions.
         result = {"protocolVersion": params.get("protocolVersion") or "2025-11-25", "capabilities": {"tools": {}},
                   "serverInfo": {"name": "sharp-search", "version": "1.0.0"}}
     elif method == "ping":
@@ -236,7 +220,6 @@ def answer(message):
 
 
 def answer_line(data):
-    """Parse and handle one raw message."""
     try:
         message = json.loads(data)
     except ValueError:
@@ -250,8 +233,7 @@ def answer_line(data):
 
 
 def protocol_output():
-    """Return a handle to the real stdout and point fd 1 at stderr, so that nothing else (such as
-    SearXNG's banner) is written to the protocol stream."""
+    """Point fd 1 at stderr, so that SearXNG's output stays out of the protocol stream."""
     out = os.fdopen(os.dup(1), "w")
     os.dup2(2, 1)
     return out
@@ -267,7 +249,7 @@ def serve_stdio(out):
                 out.write(json.dumps(message) + "\n")
                 out.flush()
 
-    # Handle messages concurrently. At EOF, in-flight calls still finish.
+    # At EOF, in-flight calls still finish.
     with ThreadPoolExecutor(max_workers=8) as pool:
         for line in sys.stdin.buffer:
             if line.strip():
@@ -297,8 +279,7 @@ class Handler(BaseHTTPRequestHandler):
     do_DELETE = do_GET
 
     def allowed(self):
-        """Serve only /mcp, and reject requests with a non-localhost Origin, so that websites can't
-        reach the server through a browser (including through DNS rebinding)."""
+        """Rejects other origins, so that websites can't reach the server through a browser."""
         origin = urllib.parse.urlsplit(self.headers.get("origin") or "http://localhost").hostname
         if self.path != "/mcp":
             self.send(404)
@@ -323,11 +304,13 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main():
-    if sys.argv[1:] not in ([], ["--http"]):
+    options = set(sys.argv[1:])
+    if not options <= {"--http", "--no-fallbacks"}:
         sys.exit(__doc__.strip())
+    fetch.FALLBACKS = "--no-fallbacks" not in options
     # Docker stops containers with SIGTERM, which PID 1 ignores without a handler.
     signal.signal(signal.SIGTERM, lambda *_: os._exit(0))
-    if sys.argv[1:] == ["--http"]:
+    if "--http" in options:
         start_engine()
         print(f"sharp-search-mcp: listening on http://0.0.0.0:{HTTP_PORT}/mcp", file=sys.stderr, flush=True)
         ThreadingHTTPServer(("0.0.0.0", HTTP_PORT), Handler).serve_forever()

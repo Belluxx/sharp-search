@@ -10,13 +10,10 @@ from urllib.parse import urlsplit
 
 import fetch
 
-# Fetches at a time. Each site is fetched once, so this doesn't trip rate limits.
 WORKERS = 5
-# Characters of a failure's reason to print.
 MAX_REASON = 76
 
-# (URL, phrase from the page's content), by bot-detection system: the one that answers a plain
-# curl request with its block page or its cookies. Some sites use others too.
+# (URL, phrase from the page's content), by the bot-detection system that answers a plain curl.
 SITES = {
     "Cloudflare": [
         ("https://stackoverflow.com/questions/11227809/why-is-processing-a-sorted-array-faster-than-processing-an-unsorted-array", "branch prediction"),
@@ -92,14 +89,13 @@ SITES = {
 
 
 def failure(url, phrase):
-    """Fetch a page. Returns why it failed, or None if its text has the phrase."""
+    """Why the fetch failed, or None if the page's text has the phrase."""
     try:
         text = fetch.fetch(url)["text"]
     except Exception as error:
         return (str(error) or repr(error)).removeprefix("could not load the page: ")
     if phrase.lower() in text.lower():
         return None
-    # The text is usually a block page: show how it starts.
     return f'got "{" ".join(text.split())}"' if text.strip() else "empty page"
 
 
@@ -110,7 +106,6 @@ def main():
     print(f"Fetching {total} pages behind bot detection\n")
     with ThreadPoolExecutor(WORKERS) as pool:
         fetches = {system: [(url, pool.submit(failure, url, phrase)) for url, phrase in sites] for system, sites in SITES.items()}
-        # One row per system, with a mark per page, filled in as the fetches finish.
         for system, sites in fetches.items():
             print(f"  {system:<12}", end="", flush=True)
             passed = 0

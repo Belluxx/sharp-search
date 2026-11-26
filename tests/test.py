@@ -97,8 +97,7 @@ class Search(unittest.TestCase):
         self.assertEqual(asked, ["http://127.0.0.1:8888/search?q=c%2B%2B+%26+rust%3F&format=json"])
 
     def test_redirects_are_not_followed(self):
-        # SearXNG answers "!!" queries with a redirect to another website. Site stands in for it:
-        # its /search redirects to a page, which would be an invalid response if it were loaded.
+        # Site stands in for SearXNG, which answers "!!" queries with a redirect.
         site = http.server.ThreadingHTTPServer(("127.0.0.1", 0), Site)
         threading.Thread(target=site.serve_forever, daemon=True).start()
         self.addCleanup(site.server_close)
@@ -169,7 +168,6 @@ class Challenge(unittest.TestCase):
                        "const kept = []; for (;;) kept.push(new Uint8Array(5e7).fill(1))"]:
             with self.subTest(script):
                 self.assertFalse(self.run_scripts(f"<script>{script}</script>"))
-        # The most memory that a child process of these tests has used, in KB.
         self.assertLess(resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss, fetch.CHALLENGE_KB)
 
     def test_time_is_limited(self):
@@ -209,6 +207,7 @@ class Site(http.server.BaseHTTPRequestHandler):
     def do_GET(self):
         path, query = urlsplit(self.path).path, parse_qs(urlsplit(self.path).query)
         port = self.server.server_port
+        agent = self.headers.get("user-agent") or ""
         if path == "/hop":
             self.answer(302, location="/page")
         elif path == "/loop":
@@ -220,12 +219,17 @@ class Site(http.server.BaseHTTPRequestHandler):
         elif path == "/checked":
             passed = query.get("solution") == ["abab"] and "passed=1" in (self.headers.get("cookie") or "")
             self.answer(200, b"<p>Welcome</p>" if passed else BOT_CHECK)
+        elif path == "/anubis":
+            self.answer(200, b'<script id="anubis_version">"v1"</script><p>Making sure you\'re not a bot!</p>' if "Mozilla" in agent else b"<p>Welcome</p>")
+        elif path == "/previews":
+            self.answer(200 if agent.startswith("Slackbot") else 403, b"<p>Welcome</p>")
+        elif path == "/refused":
+            self.answer(403 if "Safari" in agent else 200)
         elif path == "/picture":
             self.answer(200, b"\x89PNG", kind="image/png")
         elif path == "/search":
             self.answer(302, location="/page")
         elif path == "/drip":
-            # A page that arrives slowly but steadily, for 20 seconds.
             self.send_response(200)
             self.send_header("content-type", "text/html")
             self.end_headers()
@@ -265,7 +269,6 @@ class Fetching(unittest.TestCase):
         cls.site.server_close()
 
     def setUp(self):
-        # Treat 127.0.0.1 as public. Every other address is still rejected.
         patch = mock.patch.object(fetch, "public", lambda ip: ip == "127.0.0.1")
         patch.start()
         self.addCleanup(patch.stop)
@@ -281,7 +284,7 @@ class Fetching(unittest.TestCase):
             fetch.fetch(self.base + "/loop")
 
     def test_curl_uses_the_checked_ip(self):
-        # site.test resolves only through this mock. curl can't resolve it without network.
+        # curl can't resolve site.test without network.
         def getaddrinfo(host, port, **options):
             return [(socket.AF_INET, socket.SOCK_STREAM, 6, "", ("127.0.0.1", port))] if host == "site.test" else []
 
@@ -290,6 +293,21 @@ class Fetching(unittest.TestCase):
 
     def test_bot_check(self):
         self.assertEqual(fetch.fetch(self.base + "/checked"), {"url": self.base + "/checked", "title": "", "text": "Welcome"})
+
+    def test_blocked_fetch_retries_as_link_previews(self):
+        for path in ["/anubis", "/previews"]:
+            with self.subTest(path):
+                self.assertEqual(fetch.fetch(self.base + path)["text"], "Welcome")
+        with self.assertRaisesRegex(fetch.Unreadable, "HTTP 403"):
+            fetch.fetch(self.base + "/refused")
+        with mock.patch.object(fetch, "AGENTS", ()), self.assertRaisesRegex(fetch.Unreadable, "blocked by a bot check"):
+            fetch.fetch(self.base + "/anubis")
+
+    def test_fallbacks_can_be_turned_off(self):
+        with mock.patch.object(fetch, "FALLBACKS", False):
+            self.assertEqual(fetch.fetch(self.base + "/anubis")["text"], "Making sure you're not a bot!")
+            with self.assertRaisesRegex(fetch.Unreadable, "HTTP 403"):
+                fetch.fetch(self.base + "/previews")
 
     def test_slow_page_times_out(self):
         with mock.patch.object(fetch, "TIMEOUT", 1), self.assertRaisesRegex(fetch.Unreadable, "timed out"):
