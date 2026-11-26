@@ -29,6 +29,10 @@ TIMEOUT = 30
 MAX_ADDRESS = 500
 CHALLENGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "challenge")
 ROUNDS = 2
+# A page with scripts, less text and fewer links than this may be a bot check that answers like a
+# page. Short pages and JavaScript apps look the same.
+SPARSE = 1000
+SPARSE_LINKS = 10
 CHALLENGE_SECONDS = 10
 # RLIMIT_DATA for challenge.mjs. It reserves about 370 MB at start, so this leaves it about 400 MB.
 CHALLENGE_KB = 768 << 10
@@ -161,6 +165,13 @@ def page_text(body, base, charset):
     return inline(title).strip(), text
 
 
+def links(body):
+    """How many links lead to other pages, menus included. A bot check has next to none."""
+    document = lxml.html.fromstring(body)
+    addresses = [(a.get("href") or "").strip().lower() for root in (document, *document.itersiblings()) for a in root.iter("a")]
+    return sum(bool(address) and not address.startswith(("#", "javascript:", "mailto:", "tel:")) for address in addresses)
+
+
 def charset_of(response, body):
     """None leaves the detection to lxml, which assumes Latin-1 when the page doesn't declare one."""
     named = response.charset_encoding
@@ -277,21 +288,24 @@ def challenge(session, address, html):
 
 
 def fetch_in(session, address, deadline):
+    """Returns the page, and whether it may be a bot check that answers like a page."""
     request = ("GET", address)
     shown = None
     for sent_on in range(ROUNDS + 1):
         url, kind, charset, body = load(session, deadline, *request)
         if kind not in ("text/html", "application/xhtml+xml") or not body.strip():
-            return {"url": shown or url, "title": "", "text": body.decode(charset or "utf-8", errors="replace")}
+            return {"url": shown or url, "title": "", "text": body.decode(charset or "utf-8", errors="replace")}, False
         title, text = page_text(body, url, charset)
-        if text or sent_on == ROUNDS or b"<script" not in body.lower():
+        scripted = b"<script" in body.lower()
+        if text or sent_on == ROUNDS or not scripted:
             break
         request = challenge(session, url, body.decode(charset or "utf-8", errors="replace"))
         if request is None:
             break
         # Report the requested URL, not the bot check's.
         shown = shown or url
-    return {"url": shown or url, "title": title, "text": text}
+    sparse = scripted and len(text) < SPARSE and links(body) < SPARSE_LINKS
+    return {"url": shown or url, "title": title, "text": text}, sparse
 
 
 # MARK: Fallbacks
@@ -325,20 +339,26 @@ def check_blocked(status, body=b""):
 def fetch(address):
     """Fetch `address` as {"url", "title", "text"}. Raises Unreadable on failure."""
     deadline = time.monotonic() + TIMEOUT
+    page = refusal = None
     try:
         with requests.Session(impersonate="safari") as session:
-            return fetch_in(session, address, deadline)
-    except Blocked as refusal:
-        for agent in AGENTS:
-            try:
-                with requests.Session(headers={"user-agent": agent}) as session:
-                    page = fetch_in(session, address, deadline)
-            except Unreadable:
-                continue
-            # Some sites answer the agents they don't serve with an empty page.
-            if page["text"]:
-                return page
-        raise refusal
+            page, sparse = fetch_in(session, address, deadline)
+        if not (FALLBACKS and sparse):
+            return page
+    except Blocked as error:
+        refusal = error
+    for agent in AGENTS:
+        try:
+            with requests.Session(headers={"user-agent": agent}) as session:
+                other, _ = fetch_in(session, address, deadline)
+        except Unreadable:
+            continue
+        # Some sites answer the agents they don't serve with an empty page.
+        if len(other["text"]) > (len(page["text"]) if page else 0):
+            return other
+    if page:
+        return page
+    raise refusal
 
 
 if __name__ == "__main__":

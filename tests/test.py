@@ -219,6 +219,10 @@ class Site(http.server.BaseHTTPRequestHandler):
         elif path == "/checked":
             passed = query.get("solution") == ["abab"] and "passed=1" in (self.headers.get("cookie") or "")
             self.answer(200, b"<p>Welcome</p>" if passed else BOT_CHECK)
+        elif path == "/shell":
+            self.answer(200, b"<p>Welcome to the page</p>" if agent.startswith("Slackbot") else b"<nav>" + b'<a href="/page">Page</a>' * 10 + b"</nav><p>Loading...</p><script></script>")
+        elif path == "/splash":
+            self.answer(200, b"<p>Welcome to the page</p>" if agent.startswith("Slackbot") else b"<p>Checking</p><script></script>")
         elif path == "/anubis":
             self.answer(200, b'<script id="anubis_version">"v1"</script><p>Making sure you\'re not a bot!</p>' if "Mozilla" in agent else b"<p>Welcome</p>")
         elif path == "/previews":
@@ -293,6 +297,19 @@ class Fetching(unittest.TestCase):
 
     def test_bot_check(self):
         self.assertEqual(fetch.fetch(self.base + "/checked"), {"url": self.base + "/checked", "title": "", "text": "Welcome"})
+
+    def test_short_page_with_links_is_not_a_bot_check(self):
+        self.assertEqual(fetch.fetch(self.base + "/shell")["text"], "Loading...")
+        self.assertEqual(fetch.links(b'<a href="/a">A</a><a href="#top">Top</a><a href=" ">None</a><a>None</a><a href="mailto:a@site.test">Mail</a>'), 1)
+
+    def test_short_page_without_links_retries_as_link_previews(self):
+        with mock.patch.object(fetch, "run_scripts") as solver:
+            self.assertEqual(fetch.fetch(self.base + "/splash")["text"], "Welcome to the page")
+            solver.assert_not_called()
+        with mock.patch.object(fetch, "AGENTS", ()):
+            self.assertEqual(fetch.fetch(self.base + "/splash")["text"], "Checking")
+        with mock.patch.object(fetch, "FALLBACKS", False):
+            self.assertEqual(fetch.fetch(self.base + "/splash")["text"], "Checking")
 
     def test_blocked_fetch_retries_as_link_previews(self):
         for path in ["/anubis", "/previews"]:
